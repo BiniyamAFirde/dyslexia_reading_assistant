@@ -3,6 +3,9 @@
 An AI-powered reading tool designed to help people with dyslexia read, understand, and interact with documents more easily. Upload a PDF or DOCX, get a simplified version powered by Claude AI, and listen along with word-by-word text-to-speech highlighting.
 
 ---
+## 🌌 Live Preview
+
+> 🔗 > Open (`file:///Users/macbookpro13/Downloads/dyslexia_reading_assistant.html` )]directly in your browser — no server or build step required.
 
 ## 📸 Screenshots
 
