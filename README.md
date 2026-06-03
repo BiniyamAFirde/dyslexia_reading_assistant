@@ -13,9 +13,9 @@ An AI-powered reading tool designed to help people with dyslexia read, understan
 
 | Home Screen | Reading View | AI Assistance |
 |---|---|---|
-| ![Home Screen](<img width="620" height="474" alt="Screenshot 2026-06-01 at 10 46 44" src="https://github.com/user-attachments/assets/335f9e48-00c9-41fc-9c89-76d5e063d226" />
-) | ![Reading View](<img width="776" height="567" alt="Screenshot 2026-06-01 at 22 22 48" src="https://github.com/user-attachments/assets/022407e7-c3c2-4328-b62f-8694787e391f" />
-) | ![AI Assistance](<img width="748" height="560" alt="Screenshot 2026-06-01 at 10 47 47" src="https://github.com/user-attachments/assets/e62e5aa9-525f-466d-99c5-788d0a8fef76" />
+| [Home Screen](<img width="620" height="474" alt="Screenshot 2026-06-01 at 10 46 44" src="https://github.com/user-attachments/assets/335f9e48-00c9-41fc-9c89-76d5e063d226" />
+) | [Reading View](<img width="776" height="567" alt="Screenshot 2026-06-01 at 22 22 48" src="https://github.com/user-attachments/assets/022407e7-c3c2-4328-b62f-8694787e391f" />
+) | [AI Assistance](<img width="748" height="560" alt="Screenshot 2026-06-01 at 10 47 47" src="https://github.com/user-attachments/assets/e62e5aa9-525f-466d-99c5-788d0a8fef76" />
 ) |
 
 > **Figma Design:** [https://www.figma.com/proto/gQz1QDcvyt2Uw4veC5RU10/Dyslexia-AI-Reading-Assistant?node-id=0-1&t=HU9irX3ee0jdvLbH-1] 
