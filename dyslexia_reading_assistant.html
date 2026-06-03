@@ -1,0 +1,1097 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Verdana,sans-serif;background:#FFF8F0;min-height:100vh;color:#0F172A}
+  :root{
+    --primary:#2563EB;--accent-light:#DBEAFE;--bookmark:#F59E0B;
+    --success:#16A34A;--error:#DC2626;--text:#0F172A;--muted:#64748B;
+    --border:#E2D9CF;--card:#FFFFFF;--tts-line:#FEF9C3;--soft:#EFF6FF;
+  }
+  button{cursor:pointer;font-family:inherit}
+  textarea{font-family:inherit}
+  select{font-family:inherit}
+  .topbar{
+    background:#fff;border-bottom:1px solid var(--border);padding:10px 20px;
+    display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100
+  }
+  .app-icon{
+    width:32px;height:32px;background:var(--primary);border-radius:8px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0
+  }
+  .topbar-title{font-weight:600;font-size:15px;color:var(--text)}
+  .screen{display:none}
+  .screen.active{display:block}
+  .container{padding:24px;max-width:720px;margin:0 auto}
+  .back-link{
+    background:none;border:none;color:var(--primary);font-size:14px;
+    display:flex;align-items:center;gap:4px;padding:0;margin-bottom:16px
+  }
+  .card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:16px;padding:20px 24px;margin-bottom:16px
+  }
+  .icon-btn{
+    width:40px;height:40px;border-radius:20px;border:1px solid var(--border);
+    background:var(--card);font-size:18px;display:flex;align-items:center;
+    justify-content:center;transition:all 0.15s
+  }
+  .icon-btn:hover{border-color:var(--primary);background:var(--soft)}
+  .progress-bar{background:#e5e7eb;border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px}
+  .progress-fill{height:100%;background:var(--primary);transition:width 0.3s;border-radius:4px}
+  @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  .spin{display:inline-block;animation:spin 1s linear infinite}
+  .error-box{
+    background:#FEE2E2;padding:10px 14px;border-radius:8px;
+    font-size:13px;color:var(--error);margin-top:12px
+  }
+  .word-span{
+    display:inline;border-radius:4px;padding:1px 0;
+    transition:all 0.12s;cursor:pointer
+  }
+  .word-span.active{background:var(--primary);color:#fff;padding:1px 3px}
+  .word-span.past{color:#0F172A55}
+  .line-p{border-radius:6px;padding:3px 0;margin-bottom:6px;transition:background 0.25s;line-height:1.8}
+  .line-p.active-line{background:var(--tts-line);padding:3px 6px}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="app-icon">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <rect x="3" y="3" width="5" height="12" rx="1.5" fill="white" opacity="0.9"/>
+      <rect x="10" y="3" width="5" height="8" rx="1.5" fill="white" opacity="0.6"/>
+      <rect x="10" y="13" width="5" height="2" rx="1" fill="white" opacity="0.9"/>
+    </svg>
+  </div>
+  <span class="topbar-title">Dyslexia AI Reading Assistant</span>
+</div>
+
+<!-- HOME SCREEN -->
+<div id="screen-home" class="screen active">
+  <div class="container" style="max-width:720px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;margin-top:32px">
+      <h1 style="font-size:24px;font-weight:700">Dyslexia AI Reading Assistant</h1>
+      <div style="display:flex;gap:8px">
+        <button class="icon-btn" title="AI Assistance" onclick="showAI()">🤖</button>
+        <button class="icon-btn" title="Bookmarks" onclick="showScreen('bookmarks')">🔖</button>
+        <button class="icon-btn" title="Settings" onclick="showScreen('settings')">⚙️</button>
+      </div>
+    </div>
+    <button onclick="showScreen('upload')" style="
+      width:100%;height:56px;background:var(--primary);color:#fff;
+      border:none;border-radius:28px;font-size:16px;font-weight:600;
+      display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:36px
+    ">
+      <span style="font-size:20px">↑</span> Upload Document
+    </button>
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">Recent Documents</h2>
+    <div id="doc-list"></div>
+  </div>
+</div>
+
+<!-- UPLOAD SCREEN -->
+<div id="screen-upload" class="screen">
+  <div class="container" style="max-width:600px">
+    <button class="back-link" onclick="showScreen('home')">← Upload Document</button>
+    <p style="color:var(--muted);font-size:14px;text-align:center;margin-bottom:16px">
+      Upload a PDF or DOCX file to get an AI-simplified version
+    </p>
+    <div id="upload-drop" style="
+      border:2px dashed #ccc;border-radius:12px;padding:48px 24px;
+      text-align:center;cursor:pointer;background:#f0f0f0;transition:all 0.2s
+    " onclick="document.getElementById('file-input').click()"
+       ondragover="event.preventDefault();this.style.borderColor='var(--primary)';this.style.background='var(--soft)'"
+       ondragleave="this.style.borderColor='#ccc';this.style.background='#f0f0f0'"
+       ondrop="handleDrop(event)">
+      <div style="font-size:36px;margin-bottom:12px">↑</div>
+      <div style="font-weight:600;font-size:16px">Drop your document here</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:4px">or click to browse</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:4px">Supported formats: PDF, DOCX — Max size 10MB</div>
+      <input id="file-input" type="file" accept=".pdf,.docx" style="display:none" onchange="handleFileSelect(event)"/>
+    </div>
+    <div id="file-selected" style="display:none" class="card">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="width:40px;height:40px;background:#DCFCE7;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px">✅</div>
+        <div style="flex:1">
+          <div id="file-name" style="font-weight:600;font-size:15px"></div>
+          <div id="file-size" style="font-size:13px;color:var(--muted)"></div>
+        </div>
+        <button onclick="clearFile()" style="background:none;border:none;color:var(--muted);font-size:18px">✕</button>
+      </div>
+    </div>
+    <div id="upload-loading" style="display:none" class="card" style="background:var(--soft)">
+      <div style="display:flex;align-items:center;gap:10px;color:var(--primary)">
+        <span class="spin" style="font-size:18px">⟳</span>
+        <span id="upload-loading-msg" style="font-size:14px;font-weight:500"></span>
+      </div>
+    </div>
+    <div id="upload-error" class="error-box" style="display:none"></div>
+    <div style="display:flex;gap:12px;margin-top:32px">
+      <button onclick="showScreen('home')" style="
+        flex:1;height:52px;border:1px solid var(--border);background:var(--card);
+        border-radius:26px;font-size:15px;color:var(--text)
+      ">Cancel</button>
+      <button id="process-btn" onclick="processFile()" style="
+        flex:2;height:52px;background:#93C5FD;color:#fff;border:none;
+        border-radius:26px;font-size:15px;font-weight:600
+      " disabled>✓ Process Document</button>
+    </div>
+  </div>
+</div>
+
+<!-- READING SCREEN -->
+<div id="screen-reading" class="screen">
+  <div class="container" style="max-width:680px">
+    <button class="back-link" onclick="leaveReading()">← Back to Home</button>
+    <h2 id="reading-title" style="font-size:20px;font-weight:700;margin-bottom:16px"></h2>
+    <div class="card" style="min-height:320px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="text-label" style="font-weight:600;font-size:15px">Simplified Text</span>
+          <span id="ai-badge" style="background:#FEF9C3;color:#854D0E;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px">AI Simplified</span>
+        </div>
+        <button id="toggle-original-btn" onclick="toggleOriginal()" style="
+          background:none;border:1px solid var(--border);border-radius:20px;
+          padding:4px 12px;font-size:12px;color:var(--muted)
+        ">👁 Show Original</button>
+      </div>
+      <div id="reading-loading" style="text-align:center;padding:40px;color:var(--muted);display:none">
+        <div style="font-size:28px;margin-bottom:10px">✨</div>
+        <div style="font-weight:600;margin-bottom:4px">AI is simplifying your document…</div>
+        <div style="font-size:13px">This may take a moment</div>
+      </div>
+      <div id="text-display"></div>
+    </div>
+    <!-- Controls -->
+    <div class="card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 20px">
+      <button id="reset-btn" onclick="resetReading()" title="Restart" style="
+        width:36px;height:36px;border-radius:18px;background:#f3f4f6;
+        border:none;font-size:16px;display:flex;align-items:center;justify-content:center
+      ">↺</button>
+      <button id="play-btn" onclick="togglePlay()" style="
+        width:48px;height:48px;border-radius:24px;background:var(--primary);
+        border:none;color:#fff;font-size:20px;display:flex;align-items:center;
+        justify-content:center;box-shadow:0 2px 8px #2563EB44
+      ">▶</button>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:12px;color:var(--muted)">Speed</span>
+        <select id="speed-select" onchange="changeSpeed()" style="
+          border:1px solid var(--border);border-radius:20px;padding:4px 8px;
+          font-size:13px;background:var(--card)
+        ">
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button onclick="changeFontSize(-1)" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:14px;font-weight:700;line-height:1">−</button>
+        <span id="font-size-label" style="font-size:13px;min-width:44px;text-align:center;font-weight:500">18px</span>
+        <button onclick="changeFontSize(1)" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:14px;font-weight:700;line-height:1">+</button>
+      </div>
+      <div style="flex:1"></div>
+      <button class="icon-btn" title="AI Assistance" onclick="showAIFromReading()">🤖</button>
+      <button id="bookmark-btn" class="icon-btn" title="Bookmark this position" onclick="addBookmark()">🔖</button>
+    </div>
+    <div>
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px">
+        <span id="word-counter">Word 1 of 0</span>
+        <span id="pct-counter">0% Complete</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS SCREEN -->
+<div id="screen-settings" class="screen">
+  <div class="container" style="max-width:640px">
+    <button class="back-link" onclick="showScreen('home')">← Back to Home</button>
+    <div class="card">
+      <h3 style="font-size:17px;font-weight:700;margin-bottom:20px">Display Settings</h3>
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Font Family</div>
+        <div id="font-radios"></div>
+      </div>
+      <div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">
+          Font Size: <span id="fs-val" style="color:var(--primary)">18px</span>
+        </div>
+        <input type="range" min="12" max="32" value="18" id="fs-slider" oninput="document.getElementById('fs-val').textContent=this.value+'px'" style="width:100%;accent-color:var(--primary)"/>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:17px;font-weight:700;margin-bottom:20px">Audio Settings</h3>
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">TTS Voice Preference</div>
+        <div id="voice-radios"></div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">
+          Playback Speed: <span id="spd-val" style="color:var(--primary)">1x</span>
+        </div>
+        <input type="range" min="0.5" max="2" step="0.25" value="1" id="spd-slider" oninput="document.getElementById('spd-val').textContent=this.value+'x'" style="width:100%;accent-color:var(--primary)"/>
+      </div>
+      <div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">
+          Volume: <span id="vol-val" style="color:var(--primary)">80%</span>
+        </div>
+        <input type="range" min="0" max="100" value="80" id="vol-slider" oninput="document.getElementById('vol-val').textContent=this.value+'%'" style="width:100%;accent-color:var(--primary)"/>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:17px;font-weight:700;margin-bottom:20px">Simplification Settings</h3>
+      <div id="simp-radios"></div>
+    </div>
+    <div style="display:flex;gap:12px">
+      <button id="save-settings-btn" onclick="saveSettings()" style="
+        flex:2;height:52px;background:var(--text);color:#fff;border:none;
+        border-radius:12px;font-size:15px;font-weight:600;transition:background 0.3s
+      ">Save Changes</button>
+      <button onclick="resetSettings()" style="
+        flex:1;height:52px;background:var(--card);border:1px solid var(--border);
+        border-radius:12px;font-size:15px;color:var(--text)
+      ">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOOKMARKS SCREEN -->
+<div id="screen-bookmarks" class="screen">
+  <div class="container" style="max-width:680px">
+    <button class="back-link" onclick="showScreen('home')">← Back to Home</button>
+    <h2 style="font-size:22px;font-weight:700;margin-bottom:20px">🔖 Bookmarks</h2>
+    <input id="bm-search" oninput="renderBookmarks()" placeholder="Search bookmarks…" style="
+      width:100%;height:42px;border:1px solid var(--border);border-radius:21px;
+      padding:0 16px;font-size:14px;background:var(--card);margin-bottom:20px;
+      outline:none;box-sizing:border-box
+    "/>
+    <div id="bm-list"></div>
+  </div>
+</div>
+
+<!-- AI SCREEN -->
+<div id="screen-ai" class="screen">
+  <div class="container" style="max-width:960px">
+    <button class="back-link" id="ai-back" onclick="leaveAI()">← Back</button>
+    <h2 style="font-size:22px;font-weight:700;margin-bottom:24px">AI Assistance</h2>
+    <div style="display:grid;grid-template-columns:150px 1fr 190px;gap:16px">
+      <div id="ai-modes" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="display:grid;grid-template-columns:1fr 1fr;flex:1">
+          <div style="border-right:1px solid var(--border);display:flex;flex-direction:column">
+            <textarea id="ai-input" placeholder="Paste or type text here…" style="
+              flex:1;border:none;outline:none;padding:16px;font-size:14px;
+              line-height:1.6;resize:none;background:transparent;min-height:280px
+            "></textarea>
+            <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px">
+              <span id="ai-word-count" style="font-size:12px;color:var(--muted)">0 words</span>
+              <button id="ai-confirm-btn" onclick="runAI()" style="
+                height:36px;padding:0 20px;background:#93C5FD;color:#fff;
+                border:none;border-radius:18px;font-size:13px;font-weight:600;cursor:not-allowed
+              " disabled>Confirm</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <div id="ai-output" style="
+              flex:1;padding:16px;font-size:14px;line-height:1.7;
+              color:var(--muted);overflow-y:auto;min-height:280px;white-space:pre-wrap
+            ">Result will appear here…</div>
+            <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+              <button id="ai-copy-btn" onclick="copyAIOutput()" style="display:none;
+                background:none;border:1px solid var(--border);border-radius:6px;
+                padding:4px 12px;font-size:12px;color:var(--muted)
+              ">Copy 📋</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="ai-levels" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let docs = [];
+let bookmarks = [];
+let settings = {
+  fontFamily: "Verdana", fontSize: 18, ttsVoice: "Female",
+  speed: 1, volume: 80, simplificationLevel: "Moderate"
+};
+let activeDoc = null;
+let currentScreen = "home";
+
+// Reading state
+let words = [];
+let sentences = [];
+let currentWord = 0;
+let playing = false;
+let fontSize = 18;
+let readingSpeed = 1;
+let showingOriginal = false;
+let ttsActiveRef = false;
+let wordTimerRef = null;
+
+// AI state
+let aiMode = "Summarise";
+let aiLevel = "Detailed";
+let aiFromDoc = false;
+
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+async function storageGet(key) {
+  try { const r = await window.storage.get(key); return r ? JSON.parse(r.value) : null; } catch { return null; }
+}
+async function storageSet(key, val) {
+  try { await window.storage.set(key, JSON.stringify(val)); } catch {}
+}
+
+// ─── SCREEN NAV ──────────────────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("screen-" + name).classList.add("active");
+  currentScreen = name;
+  if (name === "home") renderDocList();
+  if (name === "bookmarks") renderBookmarks();
+  if (name === "settings") loadSettingsUI();
+}
+
+function leaveReading() {
+  stopTTS();
+  showScreen("home");
+}
+
+function leaveAI() {
+  if (activeDoc && currentScreen === "ai") {
+    showScreen("reading");
+  } else {
+    showScreen("home");
+  }
+}
+
+// ─── DOCUMENT EXTRACTION (FIXED) ─────────────────────────────────────────────
+// BUG FIX: DOCX files are ZIP archives — the Anthropic API does NOT support them.
+// We now use mammoth.js for DOCX (client-side extraction) and only use the API for PDFs.
+async function extractTextFromFile(file) {
+  const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+  const isDocx = /application\/vnd\.openxmlformats/.test(file.type) || /\.docx$/i.test(file.name);
+
+  if (isDocx) {
+    // ── DOCX: use mammoth.js (client-side, no API needed) ──
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target.result;
+          // mammoth.extractRawText returns { value: string, messages: [] }
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          const text = result.value.trim();
+          if (text.length > 20) {
+            resolve(text);
+          } else {
+            reject(new Error("Document appears to be empty or has no extractable text."));
+          }
+        } catch (err) {
+          reject(new Error("Could not read DOCX file: " + err.message));
+        }
+      };
+      reader.onerror = () => reject(new Error("Failed to read file."));
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  if (isPdf) {
+    // ── PDF: send to Anthropic API as a document block (supported) ──
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const base64Data = e.target.result.split(",")[1];
+          const res = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 4000,
+              messages: [{
+                role: "user",
+                content: [
+                  { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64Data } },
+                  { type: "text", text: "Extract ALL the text content from this document. Return only the extracted text, preserving paragraph breaks. Do not add any commentary or formatting." }
+                ]
+              }]
+            })
+          });
+          const data = await res.json();
+          const extracted = data.content?.[0]?.text?.trim();
+          if (extracted && extracted.length > 20) {
+            resolve(extracted);
+          } else {
+            reject(new Error("Could not extract text from PDF."));
+          }
+        } catch (err) {
+          reject(new Error("PDF extraction failed: " + err.message));
+        }
+      };
+      reader.onerror = () => reject(new Error("Failed to read file."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ── Plain text fallback ──
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      if (typeof text === "string" && text.trim().length > 20) resolve(text.trim());
+      else reject(new Error("Empty or unreadable file."));
+    };
+    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.readAsText(file);
+  });
+}
+
+// ─── UPLOAD ───────────────────────────────────────────────────────────────────
+let selectedFile = null;
+
+function handleFileSelect(e) { validateAndSetFile(e.target.files[0]); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById("upload-drop").style.borderColor = "#ccc";
+  document.getElementById("upload-drop").style.background = "#f0f0f0";
+  validateAndSetFile(e.dataTransfer.files[0]);
+}
+
+function validateAndSetFile(f) {
+  const errEl = document.getElementById("upload-error");
+  errEl.style.display = "none";
+  if (!f) return;
+  const valid = /application\/pdf/.test(f.type) || /application\/vnd\.openxmlformats/.test(f.type)
+    || /\.(pdf|docx)$/i.test(f.name);
+  if (!valid) { showUploadError("Unsupported format. Use PDF or DOCX."); return; }
+  if (f.size > 10 * 1024 * 1024) { showUploadError("File too large. Maximum size is 10MB."); return; }
+  selectedFile = f;
+  document.getElementById("file-name").textContent = f.name;
+  document.getElementById("file-size").textContent = (f.size / 1024 / 1024).toFixed(2) + " MB";
+  document.getElementById("upload-drop").style.display = "none";
+  document.getElementById("file-selected").style.display = "block";
+  const btn = document.getElementById("process-btn");
+  btn.disabled = false;
+  btn.style.background = "var(--primary)";
+  btn.style.cursor = "pointer";
+}
+
+function showUploadError(msg) {
+  const el = document.getElementById("upload-error");
+  el.textContent = "⚠️ " + msg;
+  el.style.display = "block";
+}
+
+function clearFile() {
+  selectedFile = null;
+  document.getElementById("upload-drop").style.display = "block";
+  document.getElementById("file-selected").style.display = "none";
+  document.getElementById("upload-error").style.display = "none";
+  document.getElementById("file-input").value = "";
+  const btn = document.getElementById("process-btn");
+  btn.disabled = true;
+  btn.style.background = "#93C5FD";
+  btn.style.cursor = "not-allowed";
+}
+
+async function processFile() {
+  if (!selectedFile) return;
+  const btn = document.getElementById("process-btn");
+  const errEl = document.getElementById("upload-error");
+  const loadEl = document.getElementById("upload-loading");
+  const msgEl = document.getElementById("upload-loading-msg");
+  btn.disabled = true;
+  errEl.style.display = "none";
+  loadEl.style.display = "block";
+
+  try {
+    msgEl.textContent = "Reading document…";
+    const text = await extractTextFromFile(selectedFile);
+    msgEl.textContent = "Preparing document…";
+    const now = new Date();
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    const doc = {
+      id: Date.now().toString(),
+      name: selectedFile.name,
+      size: (selectedFile.size / 1024 / 1024).toFixed(2) + " MB",
+      uploadDate: "Today, " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      originalText: text,
+      simplifiedText: null,
+      progress: 0,
+      wordCount
+    };
+    docs = [doc, ...docs].slice(0, 10);
+    await storageSet("dyslexia-docs", docs);
+    clearFile();
+    loadEl.style.display = "none";
+    openDoc(doc);
+  } catch (err) {
+    loadEl.style.display = "none";
+    showUploadError(err.message || "Failed to process document.");
+    btn.disabled = false;
+    btn.style.background = "var(--primary)";
+    btn.style.cursor = "pointer";
+  }
+}
+
+// ─── READING ──────────────────────────────────────────────────────────────────
+function openDoc(doc) {
+  activeDoc = doc;
+  currentWord = doc.progress || 0;
+  showingOriginal = false;
+  words = [];
+  sentences = [];
+  readingSpeed = settings.speed || 1;
+  fontSize = settings.fontSize || 18;
+  document.getElementById("speed-select").value = readingSpeed;
+  document.getElementById("font-size-label").textContent = fontSize + "px";
+  document.getElementById("reading-title").textContent = doc.name;
+  document.getElementById("text-label").textContent = "Simplified Text";
+  document.getElementById("ai-badge").style.display = "inline";
+  document.getElementById("toggle-original-btn").textContent = "👁 Show Original";
+  document.getElementById("reading-loading").style.display = "none";
+  document.getElementById("text-display").innerHTML = "";
+  showScreen("reading");
+  if (doc.simplifiedText) {
+    setSimplifiedText(doc.simplifiedText);
+  } else {
+    simplifyText(doc.originalText || "");
+  }
+}
+
+function setSimplifiedText(text) {
+  words = text.split(/\s+/).filter(Boolean);
+  sentences = text.match(/[^.!?]+[.!?]*/g)?.map(s => s.trim()).filter(Boolean) || [text];
+  renderWords(false);
+  updateProgress();
+}
+
+function renderWords(original) {
+  const display = document.getElementById("text-display");
+  if (original) {
+    const txt = activeDoc.originalText || "";
+    display.innerHTML = txt.split(/\n+/).map(line =>
+      `<p style="line-height:1.8;margin-bottom:10px;font-size:${fontSize}px">${escapeHtml(line)}</p>`
+    ).join("");
+    return;
+  }
+  if (!words.length) return;
+  const simplified = activeDoc.simplifiedText || "";
+  const lines = simplified.split(/\n+/).filter(Boolean);
+  let globalIdx = 0;
+  display.innerHTML = lines.map(line => {
+    const lw = line.split(/\s+/).filter(Boolean);
+    const lineStart = globalIdx;
+    globalIdx += lw.length;
+    return `<p class="line-p" data-start="${lineStart}" data-end="${globalIdx}" style="font-size:${fontSize}px">${
+      lw.map((w, wi) => {
+        const wIdx = lineStart + wi;
+        return `<span class="word-span" data-idx="${wIdx}" onclick="clickWord(${wIdx})">${escapeHtml(w)}</span> `;
+      }).join("")
+    }</p>`;
+  }).join("");
+  updateWordHighlight();
+}
+
+function updateWordHighlight() {
+  document.querySelectorAll(".word-span").forEach(el => {
+    const idx = parseInt(el.dataset.idx);
+    el.className = "word-span" + (idx === currentWord ? " active" : idx < currentWord ? " past" : "");
+  });
+  document.querySelectorAll(".line-p").forEach(el => {
+    const start = parseInt(el.dataset.start);
+    const end = parseInt(el.dataset.end);
+    el.classList.toggle("active-line", currentWord >= start && currentWord < end);
+  });
+  const activeEl = document.querySelector(`.word-span[data-idx="${currentWord}"]`);
+  if (activeEl) activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function updateProgress() {
+  const total = words.length;
+  const pct = total > 0 ? Math.round((currentWord / total) * 100) : 0;
+  document.getElementById("progress-fill").style.width = pct + "%";
+  document.getElementById("word-counter").textContent = `Word ${currentWord + 1} of ${total}`;
+  document.getElementById("pct-counter").textContent = pct + "% Complete";
+}
+
+async function simplifyText(text) {
+  document.getElementById("reading-loading").style.display = "block";
+  document.getElementById("text-display").innerHTML = "";
+  try {
+    const lvl = settings.simplificationLevel || "Moderate";
+    const instruction = lvl === "Light"
+      ? "Lightly simplify this text for a dyslexic reader. Keep most original wording but break long sentences. Return only the simplified text:"
+      : lvl === "Full"
+      ? "Fully simplify this text for maximum readability for someone with dyslexia. Very simple words, very short sentences. Return only the simplified text:"
+      : "Simplify this text for a dyslexic reader. Use simpler vocabulary and shorter sentences (max 15 words each). Return only the simplified text:";
+
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2000,
+        messages: [{ role: "user", content: `${instruction}\n\n${text.slice(0, 4000)}` }]
+      })
+    });
+    const data = await res.json();
+    const result = data.content?.[0]?.text?.trim() || text;
+    activeDoc.simplifiedText = result;
+    const idx = docs.findIndex(d => d.id === activeDoc.id);
+    if (idx >= 0) { docs[idx].simplifiedText = result; storageSet("dyslexia-docs", docs); }
+    setSimplifiedText(result);
+  } catch {
+    activeDoc.simplifiedText = text;
+    setSimplifiedText(text);
+  }
+  document.getElementById("reading-loading").style.display = "none";
+}
+
+function toggleOriginal() {
+  showingOriginal = !showingOriginal;
+  if (showingOriginal) {
+    stopTTS();
+    document.getElementById("text-label").textContent = "Original Text";
+    document.getElementById("ai-badge").style.display = "none";
+    document.getElementById("toggle-original-btn").textContent = "👁 Show Simplified";
+    renderWords(true);
+  } else {
+    document.getElementById("text-label").textContent = "Simplified Text";
+    document.getElementById("ai-badge").style.display = "inline";
+    document.getElementById("toggle-original-btn").textContent = "👁 Show Original";
+    renderWords(false);
+  }
+}
+
+function clickWord(idx) {
+  currentWord = idx;
+  updateWordHighlight();
+  updateProgress();
+  if (playing) {
+    stopTTS();
+    setTimeout(() => startTTS(idx), 80);
+  }
+}
+
+function changeFontSize(delta) {
+  fontSize = Math.max(12, Math.min(32, fontSize + delta));
+  document.getElementById("font-size-label").textContent = fontSize + "px";
+  renderWords(showingOriginal);
+}
+
+// ─── TTS ──────────────────────────────────────────────────────────────────────
+let synth = window.speechSynthesis;
+let utterance = null;
+
+function pickVoice(pref) {
+  const voices = synth.getVoices().filter(v => v.lang.startsWith("en"));
+  if (pref === "Female") return voices.find(v => /female|woman|zira|samantha|karen|moira|tessa|victoria/i.test(v.name)) || voices[0];
+  if (pref === "Male") return voices.find(v => /male|man|david|mark|daniel|alex|fred/i.test(v.name)) || voices[0];
+  return voices[0];
+}
+
+function startTTS(fromWord) {
+  if (!("speechSynthesis" in window) || !sentences.length) { startWordTicker(fromWord); return; }
+  synth.cancel();
+  clearInterval(wordTimerRef);
+  ttsActiveRef = true;
+
+  let wordCount = 0, sentIdx = 0;
+  for (let i = 0; i < sentences.length; i++) {
+    const sw = sentences[i].split(/\s+/).filter(Boolean).length;
+    if (wordCount + sw > fromWord) { sentIdx = i; break; }
+    wordCount += sw;
+  }
+
+  function speakSentence(idx) {
+    if (!ttsActiveRef || idx >= sentences.length) { setPlaying(false); return; }
+    const sentence = sentences[idx];
+    const sentWords = sentence.split(/\s+/).filter(Boolean);
+    let globalBase = 0;
+    for (let i = 0; i < idx; i++) globalBase += sentences[i].split(/\s+/).filter(Boolean).length;
+    currentWord = globalBase;
+    updateWordHighlight(); updateProgress();
+    utterance = new SpeechSynthesisUtterance(sentence);
+    utterance.rate = Math.max(0.1, Math.min(10, readingSpeed));
+    utterance.volume = (settings.volume || 80) / 100;
+    utterance.lang = "en-US";
+    const voice = pickVoice(settings.ttsVoice || "Female");
+    if (voice) utterance.voice = voice;
+    utterance.onboundary = (e) => {
+      if (e.name !== "word") return;
+      const textSoFar = sentence.slice(0, e.charIndex);
+      const wi = textSoFar.split(/\s+/).filter(Boolean).length;
+      currentWord = globalBase + Math.min(wi, sentWords.length - 1);
+      updateWordHighlight(); updateProgress();
+    };
+    utterance.onend = () => { if (ttsActiveRef) speakSentence(idx + 1); };
+    utterance.onerror = (e) => { if (e.error !== "interrupted" && ttsActiveRef) speakSentence(idx + 1); };
+    synth.speak(utterance);
+  }
+  speakSentence(sentIdx);
+}
+
+function startWordTicker(fromWord) {
+  clearInterval(wordTimerRef);
+  let cur = fromWord;
+  wordTimerRef = setInterval(() => {
+    cur++;
+    if (cur >= words.length) { clearInterval(wordTimerRef); setPlaying(false); return; }
+    currentWord = cur;
+    updateWordHighlight(); updateProgress();
+  }, Math.max(80, 500 / readingSpeed));
+}
+
+function stopTTS() {
+  synth.cancel();
+  clearInterval(wordTimerRef);
+  ttsActiveRef = false;
+  utterance = null;
+}
+
+function setPlaying(val) {
+  playing = val;
+  document.getElementById("play-btn").textContent = val ? "⏸" : "▶";
+}
+
+function togglePlay() {
+  if (playing) {
+    stopTTS();
+    setPlaying(false);
+  } else {
+    setPlaying(true);
+    startTTS(currentWord);
+  }
+}
+
+function resetReading() {
+  stopTTS();
+  setPlaying(false);
+  currentWord = 0;
+  updateWordHighlight();
+  updateProgress();
+}
+
+function changeSpeed() {
+  readingSpeed = parseFloat(document.getElementById("speed-select").value);
+  if (playing) { stopTTS(); setTimeout(() => startTTS(currentWord), 80); }
+}
+
+// ─── BOOKMARKS ────────────────────────────────────────────────────────────────
+function addBookmark() {
+  if (!activeDoc) return;
+  const exists = bookmarks.some(b => b.docId === activeDoc.id && Math.abs(b.wordIndex - currentWord) < 5);
+  if (exists) return;
+  const b = {
+    id: Date.now().toString(), docId: activeDoc.id, docName: activeDoc.name,
+    wordIndex: currentWord, excerpt: words[currentWord] || "",
+    timestamp: new Date().toLocaleDateString()
+  };
+  bookmarks = [b, ...bookmarks];
+  storageSet("dyslexia-bookmarks", bookmarks);
+  document.getElementById("bookmark-btn").style.borderColor = "var(--bookmark)";
+  document.getElementById("bookmark-btn").style.background = "#F59E0B20";
+  setTimeout(() => {
+    document.getElementById("bookmark-btn").style.borderColor = "var(--border)";
+    document.getElementById("bookmark-btn").style.background = "var(--card)";
+  }, 1000);
+}
+
+function renderBookmarks() {
+  const search = document.getElementById("bm-search").value.toLowerCase();
+  const filtered = bookmarks.filter(b => b.docName.toLowerCase().includes(search));
+  const list = document.getElementById("bm-list");
+  if (!filtered.length) { list.innerHTML = "<p style='color:var(--muted)'>No bookmarks found.</p>"; return; }
+  list.innerHTML = filtered.map(b => `
+    <div class="card" style="display:flex;align-items:center;gap:14px;padding:16px 20px">
+      <button onclick="openBookmark('${b.id}')" style="background:none;border:none;flex:1;text-align:left;padding:0;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">📄</span>
+          <div>
+            <div style="font-weight:600;font-size:15px">${escapeHtml(b.docName)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">
+              ${b.timestamp} · Word ${b.wordIndex}${b.excerpt ? ` · "…${escapeHtml(b.excerpt)}…"` : ""}
+            </div>
+          </div>
+        </div>
+      </button>
+      <button onclick="deleteBookmark('${b.id}')" style="
+        width:40px;height:40px;border-radius:20px;background:#FEE2E2;
+        border:none;cursor:pointer;font-size:18px;flex-shrink:0
+      ">🗑</button>
+    </div>
+  `).join("");
+}
+
+function openBookmark(id) {
+  const b = bookmarks.find(x => x.id === id);
+  if (!b) return;
+  const doc = docs.find(d => d.id === b.docId);
+  if (!doc) return;
+  activeDoc = { ...doc, progress: b.wordIndex };
+  currentWord = b.wordIndex;
+  openDoc(activeDoc);
+}
+
+function deleteBookmark(id) {
+  bookmarks = bookmarks.filter(b => b.id !== id);
+  storageSet("dyslexia-bookmarks", bookmarks);
+  renderBookmarks();
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+function loadSettingsUI() {
+  document.getElementById("fs-slider").value = settings.fontSize;
+  document.getElementById("fs-val").textContent = settings.fontSize + "px";
+  document.getElementById("spd-slider").value = settings.speed;
+  document.getElementById("spd-val").textContent = settings.speed + "x";
+  document.getElementById("vol-slider").value = settings.volume;
+  document.getElementById("vol-val").textContent = settings.volume + "%";
+
+  const fontOpts = ["OpenDyslexic", "Arial", "Verdana"];
+  document.getElementById("font-radios").innerHTML = fontOpts.map(f => `
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;
+      border:1px solid ${f === settings.fontFamily ? "var(--primary)" : "var(--border)"};
+      background:${f === settings.fontFamily ? "var(--soft)" : "transparent"};margin-bottom:8px;cursor:pointer">
+      <input type="radio" name="font" value="${f}" ${f === settings.fontFamily ? "checked" : ""} style="accent-color:var(--primary)"/>
+      <span style="font-weight:500;font-size:14px">${f}</span>
+    </label>
+  `).join("");
+
+  const voiceOpts = ["Male", "Female", "Neutral"];
+  document.getElementById("voice-radios").innerHTML = voiceOpts.map(v => `
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;
+      border:1px solid ${v === settings.ttsVoice ? "var(--primary)" : "var(--border)"};
+      background:${v === settings.ttsVoice ? "var(--soft)" : "transparent"};margin-bottom:8px;cursor:pointer">
+      <input type="radio" name="voice" value="${v}" ${v === settings.ttsVoice ? "checked" : ""} style="accent-color:var(--primary)"/>
+      <span style="font-weight:500;font-size:14px">${v}</span>
+    </label>
+  `).join("");
+
+  const simpOpts = [
+    { value: "Light", desc: "Minor adjustments, preserve most original wording" },
+    { value: "Moderate", desc: "Simplify vocabulary and shorten sentences" },
+    { value: "Full", desc: "Maximum simplification for easiest reading" },
+  ];
+  document.getElementById("simp-radios").innerHTML = simpOpts.map(o => `
+    <label style="display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:10px;
+      border:1px solid ${o.value === settings.simplificationLevel ? "var(--primary)" : "var(--border)"};
+      background:${o.value === settings.simplificationLevel ? "var(--soft)" : "transparent"};
+      margin-bottom:8px;cursor:pointer">
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="radio" name="simp" value="${o.value}" ${o.value === settings.simplificationLevel ? "checked" : ""} style="accent-color:var(--primary)"/>
+        <span style="font-weight:600;font-size:14px">${o.value}</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin:0;margin-left:20px">${o.desc}</p>
+    </label>
+  `).join("");
+}
+
+async function saveSettings() {
+  const fontEl = document.querySelector('input[name="font"]:checked');
+  const voiceEl = document.querySelector('input[name="voice"]:checked');
+  const simpEl = document.querySelector('input[name="simp"]:checked');
+  settings = {
+    fontFamily: fontEl ? fontEl.value : settings.fontFamily,
+    fontSize: parseInt(document.getElementById("fs-slider").value),
+    ttsVoice: voiceEl ? voiceEl.value : settings.ttsVoice,
+    speed: parseFloat(document.getElementById("spd-slider").value),
+    volume: parseInt(document.getElementById("vol-slider").value),
+    simplificationLevel: simpEl ? simpEl.value : settings.simplificationLevel
+  };
+  await storageSet("dyslexia-settings", settings);
+  const btn = document.getElementById("save-settings-btn");
+  btn.textContent = "✓ Saved!";
+  btn.style.background = "var(--success)";
+  setTimeout(() => { btn.textContent = "Save Changes"; btn.style.background = "var(--text)"; }, 2000);
+}
+
+function resetSettings() {
+  settings = { fontFamily: "Verdana", fontSize: 18, ttsVoice: "Female", speed: 1, volume: 80, simplificationLevel: "Moderate" };
+  loadSettingsUI();
+}
+
+// ─── AI ASSISTANCE ────────────────────────────────────────────────────────────
+const AI_MODES = ["Simplify", "Summarise", "Define Terms", "Key Points"];
+const AI_LEVELS = [
+  { value: "Brief", desc: "Key points only, short and simple." },
+  { value: "Moderate", desc: "Main ideas with supporting detail." },
+  { value: "Detailed", desc: "Full simplification, easier language." },
+];
+
+function renderAIUI() {
+  document.getElementById("ai-modes").innerHTML = AI_MODES.map(m => `
+    <button onclick="setAIMode('${m}')" style="
+      padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:${m === aiMode ? 700 : 500};
+      font-size:14px;background:${m === aiMode ? "var(--primary)" : "var(--card)"};
+      color:${m === aiMode ? "#fff" : "var(--text)"};
+      border:1px solid ${m === aiMode ? "var(--primary)" : "var(--border)"};
+      transition:all 0.15s
+    ">${m}</button>
+  `).join("");
+  document.getElementById("ai-levels").innerHTML = AI_LEVELS.map(l => `
+    <label style="display:flex;flex-direction:column;gap:4px;padding:12px 14px;
+      border-radius:12px;border:1px solid ${l.value === aiLevel ? "var(--primary)" : "var(--border)"};
+      background:${l.value === aiLevel ? "var(--soft)" : "var(--card)"};cursor:pointer;transition:all 0.15s">
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="radio" name="ai-level" value="${l.value}" ${l.value === aiLevel ? "checked" : ""}
+          onchange="setAILevel('${l.value}')" style="accent-color:var(--primary)"/>
+        <span style="font-weight:600;font-size:14px">${l.value}</span>
+      </div>
+      <p style="font-size:12px;color:${l.value === aiLevel ? "var(--primary)" : "var(--muted)"};margin:0;line-height:1.4">${l.desc}</p>
+    </label>
+  `).join("");
+}
+
+function setAIMode(m) { aiMode = m; renderAIUI(); }
+function setAILevel(l) { aiLevel = l; renderAIUI(); }
+
+function showAI() {
+  aiFromDoc = false;
+  document.getElementById("ai-input").value = "";
+  document.getElementById("ai-output").textContent = "Result will appear here…";
+  document.getElementById("ai-output").style.color = "var(--muted)";
+  document.getElementById("ai-copy-btn").style.display = "none";
+  renderAIUI();
+  updateAIWordCount();
+  showScreen("ai");
+}
+
+function showAIFromReading() {
+  aiFromDoc = true;
+  document.getElementById("ai-input").value = activeDoc?.simplifiedText || activeDoc?.originalText || "";
+  document.getElementById("ai-output").textContent = "Result will appear here…";
+  document.getElementById("ai-output").style.color = "var(--muted)";
+  document.getElementById("ai-copy-btn").style.display = "none";
+  renderAIUI();
+  updateAIWordCount();
+  showScreen("ai");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const aiInput = document.getElementById("ai-input");
+  if (aiInput) aiInput.addEventListener("input", updateAIWordCount);
+});
+
+function updateAIWordCount() {
+  const val = document.getElementById("ai-input").value;
+  const count = val.trim() ? val.trim().split(/\s+/).length : 0;
+  document.getElementById("ai-word-count").textContent = count + " words";
+  const btn = document.getElementById("ai-confirm-btn");
+  btn.disabled = count === 0;
+  btn.style.background = count > 0 ? "var(--primary)" : "#93C5FD";
+  btn.style.cursor = count > 0 ? "pointer" : "not-allowed";
+}
+
+async function runAI() {
+  const input = document.getElementById("ai-input").value.trim();
+  if (!input) return;
+  const outEl = document.getElementById("ai-output");
+  const btn = document.getElementById("ai-confirm-btn");
+  btn.disabled = true;
+  btn.textContent = "…";
+  outEl.textContent = "Analyzing text…";
+  outEl.style.color = "var(--muted)";
+  document.getElementById("ai-copy-btn").style.display = "none";
+
+  const prompts = {
+    "Simplify": `Simplify this text for a dyslexic reader at a ${aiLevel} level. Use short sentences and simple words. Return only the result:\n\n${input}`,
+    "Summarise": `Summarise this text at a ${aiLevel} level for a dyslexic student. Be clear and concise. Return only the result:\n\n${input}`,
+    "Define Terms": `Identify and define the key terms in this text at a ${aiLevel} level. Format as a numbered list. Return only the result:\n\n${input}`,
+    "Key Points": `Extract the key points from this text at a ${aiLevel} level. Use a numbered list with simple language. Return only the result:\n\n${input}`,
+  };
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompts[aiMode] }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || "No output generated.";
+    outEl.textContent = text;
+    outEl.style.color = "var(--text)";
+    document.getElementById("ai-copy-btn").style.display = "inline-block";
+  } catch {
+    outEl.textContent = "Error contacting AI. Please try again.";
+  }
+  btn.disabled = false;
+  btn.textContent = "Confirm";
+  updateAIWordCount();
+}
+
+function copyAIOutput() {
+  const text = document.getElementById("ai-output").textContent;
+  navigator.clipboard?.writeText(text);
+  const btn = document.getElementById("ai-copy-btn");
+  btn.textContent = "✓ Copied!";
+  btn.style.color = "var(--success)";
+  btn.style.borderColor = "var(--success)";
+  setTimeout(() => { btn.textContent = "Copy 📋"; btn.style.color = "var(--muted)"; btn.style.borderColor = "var(--border)"; }, 1500);
+}
+
+// ─── HOME ────────────────────────────────────────────────────────────────────
+function renderDocList() {
+  const list = document.getElementById("doc-list");
+  if (!docs.length) {
+    list.innerHTML = "<p style='color:var(--muted);font-size:15px'>No documents yet. Upload one to get started.</p>";
+    return;
+  }
+  list.innerHTML = docs.map(doc => `
+    <button onclick="openDoc(${JSON.stringify(doc).replace(/"/g, '&quot;')})" style="
+      width:100%;background:var(--card);border:1px solid var(--border);
+      border-radius:14px;padding:16px 20px;margin-bottom:12px;cursor:pointer;
+      display:flex;align-items:center;gap:14px;text-align:left
+    ">
+      <span style="font-size:22px">📄</span>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:15px;color:var(--text)">${escapeHtml(doc.name)}</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px">${doc.uploadDate} · ${doc.size}</div>
+      </div>
+      ${doc.progress > 0 ? `<div style="font-size:12px;color:var(--primary);font-weight:600">${Math.round((doc.progress / (doc.wordCount || 1)) * 100)}%</div>` : ""}
+    </button>
+  `).join("");
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function escapeHtml(str) {
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+(async () => {
+  const s = await storageGet("dyslexia-settings");
+  if (s) settings = { ...settings, ...s };
+  const d = await storageGet("dyslexia-docs");
+  if (d) docs = d;
+  const b = await storageGet("dyslexia-bookmarks");
+  if (b) bookmarks = b;
+  renderDocList();
+
+  // Wire up AI input word count
+  document.getElementById("ai-input").addEventListener("input", updateAIWordCount);
+})();
+</script>
+</body>
+</html>
